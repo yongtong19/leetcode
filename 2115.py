@@ -7,39 +7,44 @@ class Solution:
     ) -> List[str]:
         ingredients_map = dict(zip(recipes, ingredients))
         supplies = set(supplies)
-        ok_recipes = set()
+        recipe_status = dict(zip(recipes, [None] * len(recipes)))
 
         for recipe in recipes:
-            if self.h(recipe, ok_recipes, ingredients_map, supplies, set()):
-                ok_recipes.add(recipe)
+            self.check_recipe(recipe, recipe_status, ingredients_map, supplies, set())
 
-        return list(ok_recipes)
+        return list([recipe for recipe in recipes if recipe_status[recipe]])
 
-    def h(
+    def check_recipe(
         self,
-        item: str,
-        fulfilled: set[str],
+        recipe: str,
+        recipe_status: dict[str, bool | None],
         ingredients_map: dict[str, List[str]],
         supplies: set[str],
-        chain: set[str],
+        recipe_chain: set[str],
     ) -> bool:
-        if item in chain:
+        if recipe_status[recipe] is not None:
+            return recipe_status[recipe]
+
+        if recipe in recipe_chain:
             return False
 
-        if item in fulfilled or item in supplies:
-            return True
+        recipe_chain.add(recipe)
+        fulfilled = True
+        for ingredient in ingredients_map[recipe]:
+            if ingredient not in ingredients_map:
+                fulfilled &= ingredient in supplies
 
-        if item not in ingredients_map:
-            return False
+            else:
+                fulfilled &= self.check_recipe(
+                    ingredient, recipe_status, ingredients_map, supplies, recipe_chain
+                )
 
-        chain.add(item)
-        if all(
-            self.h(ingredient, fulfilled, ingredients_map, supplies, chain)
-            for ingredient in ingredients_map[item]
-        ):
-            chain.remove(item)
-            return True
-        return False
+            if not fulfilled:
+                break
+
+        recipe_chain.remove(recipe)
+        recipe_status[recipe] = fulfilled
+        return recipe_status[recipe]
 
 
 if __name__ == "__main__":
